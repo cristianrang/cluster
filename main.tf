@@ -4,16 +4,20 @@ provider "aws" {                                          #Provider es el provee
   region     = "us-east-1"                                #region en la cual se encuentra la cuenta para crear instancias
 }
 
-resource "aws_instance" "InsReverseProxy" {
+resource "aws_instance" "Docker-Swarm" {
   instance_type          = "t2.micro"
+  count = 3
   ami                    = "ami-08d4ac5b634553e16"
+  tags = {
+    "Name" = "Node-${count.index}"
+  }
   key_name               = "MRSI_PCNV"
   user_data              = filebase64("${path.module}/scripts/docker.sh") #Instrucción para correr el archivo docker.sh 
-  vpc_security_group_ids = [aws_security_group.WebSG.id]
+  vpc_security_group_ids = [aws_security_group.DockerWebSG.id]
 }
 
-resource "aws_security_group" "WebSG" { #Vamos a crear un grupo de seguridad
-  name = "sg_reglas_firewall"
+resource "aws_security_group" "DockerWebSG" { #Vamos a crear un grupo de seguridad
+  name = "sg_reglas_firewall_docker_swarm"
   ingress {                     #Reglas de firewall de entrada
     cidr_blocks = ["0.0.0.0/0"] #Se aplicará a todas las direcciones
     description = "SG HTTP"     #Descripción
@@ -46,5 +50,5 @@ resource "aws_security_group" "WebSG" { #Vamos a crear un grupo de seguridad
 
 #Salida de ip publica
 output "public_ip" {
-  value = join(",", aws_instance.InsReverseProxy.*.public_ip)
+  value = join(",", aws_instance.Docker-Swarm.*.public_ip)
 }
